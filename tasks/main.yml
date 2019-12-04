@@ -1,0 +1,15 @@
+---
+- name: "Génération du token pour communiquer avec l'API"
+  include: 00_rundeck_auth.yml
+
+- name: "000 - Suppression du projet"
+  include: 10_clean_rundeck_project.yml
+  when: remove_project|bool == true
+
+- name: "Créer les projets"
+  include: 01_rundeck_create_project.yml
+  when: remove_project|bool == false
+
+- name: "Configurer les projets"
+  include: 02_rundeck_config_project.yml
+  when: remove_project|bool == false

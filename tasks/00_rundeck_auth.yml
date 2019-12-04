@@ -1,0 +1,10 @@
+---
+- name: "Rundeck Project - Authentification sur Rundeck"
+  uri:
+    url: http://{{ ansible_eth0.ipv4.address }}:4440/j_security_check
+    method: POST
+    body: "j_username={{ rundeck_user_login }}&j_password={{ rundeck_user_password }}"
+    status_code: 302
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+  register: login

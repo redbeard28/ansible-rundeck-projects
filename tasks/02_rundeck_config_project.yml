@@ -1,0 +1,86 @@
+---
+- name: "Creates temp {{ rundeck_project_name }} CONFIG directory"
+  file:
+    path: "/{{ ENV_RUNDECK_PATH_PROJECTS }}/{{ rundeck_project_name }}/etc"
+    state: directory
+    recurse: yes
+    owner: 1000 # UUID of rundeck user in th container
+    group: root
+    mode: '0775'
+  when: rundeck_resources_source_1_type == "file"
+
+- name: "Templating resourcesxml file to container {{ rundeck_docker_container_name }}"
+  template:
+    src: "resources.xml.j2"
+    dest: "/{{ ENV_RUNDECK_PATH_PROJECTS }}/{{ rundeck_project_name }}/etc/resources.xml"
+    owner: root
+    group: root
+    mode: '0755'
+  when: rundeck_resources_source_1_type == "file"
+
+- name: "Deleting temp {{ rundeck_project_name }} CONFIG directory"
+  file:
+    path: "/tmp/{{ rundeck_project_name }}"
+    state: absent
+  when: rundeck_resources_source_1_type == "file"
+
+- name: "Rundeck Project {{ rundeck_project_name }} - configuration by file type"
+  uri:
+    url: "http://{{ ansible_eth0.ipv4.address }}:4440/api/19/project/{{ rundeck_project_name }}/config"
+    method: PUT
+    return_content: yes
+    body: '{
+      "project.label": "{{ rundeck_project_name }}",
+      "project.name": "{{ rundeck_project_name }}",
+      "project.description": "{{ rundeck_project_description }}",
+      "project.ssh-authentication": "{{ rundeck_project_ssh_authentication }}",
+      "project.ssh-keypath": "{{ rundeck_project_ssh_keypath }}",
+      "project.disable.executions": "false",
+      "project.disable.schedule": "false",
+      "project.execution.history.cleanup.batch": "500",
+      "project.execution.history.cleanup.enabled": "false",
+      "project.execution.history.cleanup.retention.days": "60",
+      "project.execution.history.cleanup.retention.minimum": "50",
+      "project.execution.history.cleanup.schedule": "0 0 0 1/1 * ? *",
+      "project.jobs.gui.groupExpandLevel": "1",
+      "resources.source.1.config.file": "{{ rundeck_resources_source_1_config_file }}",
+      "resources.source.1.config.format": "{{ rundeck_resources_source_1_config_format }}",
+      "resources.source.1.config.generateFileAutomatically": "{{ rundeck_resources_source_1_config_generateFileAutomatically }}",
+      "resources.source.1.file": "{{ rundeck_resources_source_1_file }}",
+      "resources.source.1.format": "{{ rundeck_resources_source_1_format }}",
+      "resources.source.1.generateFileAutomatically": "{{ rundeck_resources_source_1_generateFileAutomatically }}",
+      "resources.source.1.includeServerNode": "{{ rundeck_resources_source_1_includeServerNode }}",
+      "resources.source.1.requireFileExists": "{{ rundeck_resources_source_1_requireFileExists }}",
+      "resources.source.1.type": "{{ rundeck_resources_source_1_type }}",
+      "service.FileCopier.default.provider": "jsch-scp",
+      "service.NodeExecutor.default.provider": "jsch-ssh"
+      }'
+    body_format: json
+    headers:
+      Cookie: "{{login.set_cookie}}"
+      Content-Type: "application/json"
+    status_code: 200, 400, 404
+  register: project_config_status
+  when: rundeck_resources_source_1_type == "file"
+
+- debug:
+    msg: "{{ project_config_status.status }}"
+
+- name: "Rundeck Project {{ rundeck_project_name }} - configuration by URL type"
+  uri:
+    url: "http://{{ ansible_eth0.ipv4.address }}:4440/api/19/project/{{ rundeck_project_name }}/config"
+    method: PUT
+    return_content: yes
+    body: '{ "project.ssh-authentication": "{{ rundeck_project_ssh_authentication }}",
+      "project.ssh-keypath": "{{ rundeck_project_ssh_keypath }}",
+      "service.FileCopier.default.provider": "jsch-scp",
+      "service.NodeExecutor.default.provider": "jsch-ssh"
+      }'
+    body_format: json
+    headers:
+      Cookie: "{{login.set_cookie}}"
+      Content-Type: "application/json"
+    status_code: 200, 400, 404
+  register: project_config_status
+  when: rundeck_resources_source_1_type == "url"
+

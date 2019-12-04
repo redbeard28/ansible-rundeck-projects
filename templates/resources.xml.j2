@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+{% for item in nodes %}
+ <node name="{{ item.name }}" description="{{ item.description }}" hostname="{{ item.hostname }}" osArch="{{ item.osArch }}" osFamily="{{ item.osFamily }}" osName="{{ item.osName }}" osVersion="{{ item.osVersion }}" username="{{ item.username }}"/>
+{% endfor %}
+</project>
+

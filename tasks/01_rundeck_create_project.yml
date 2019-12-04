@@ -1,0 +1,26 @@
+---
+- name: "Rundeck Project - Vérifier existance du projet du project {{ rundeck_project_name }}"
+  uri:
+    url: "http://{{ ansible_eth0.ipv4.address }}:4440/api/19/project/{{ rundeck_project_name }}"
+    method: GET
+    return_content: yes
+    body_format: json
+    headers:
+      Cookie: "{{login.set_cookie}}"
+      Content-Type: "application/json"
+    status_code: 200, 400, 404
+  register: project_info
+
+- name: "Rundeck Project - Création du project {{ rundeck_project_name }}"
+  uri:
+    url: "http://{{ ansible_eth0.ipv4.address }}:4440/api/19/projects"
+    method: POST
+    return_content: yes
+    body: '{ "name": "{{ rundeck_project_name }}" }'
+    body_format: json
+    headers:
+      Cookie: "{{login.set_cookie}}"
+      Content-Type: "application/json"
+    status_code: 201
+  when: project_info.status == 404
+  register: project_info
